@@ -2,6 +2,8 @@ package com.Webapp.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "projects")
@@ -14,11 +16,17 @@ public class Project {
     private String name;
     private String description;
 
-    // Since createdDate is managed by the database, you can omit it in the constructor
+    @ManyToMany
+    @JoinTable(
+        name = "project_users",
+        joinColumns = @JoinColumn(name = "project_id"),
+        inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    private Set<User> users = new HashSet<>();
+
     @Column(name = "created_date", updatable = false, insertable = false)
     private LocalDateTime createdDate;
 
-    // Constructor, getters, and setters
     public Project() {}
 
     public Project(String name, String description) {
@@ -26,6 +34,7 @@ public class Project {
         this.description = description;
     }
 
+    // Getters and Setters
     public Long getId() {
         return id;
     }
@@ -50,9 +59,15 @@ public class Project {
         this.description = description;
     }
 
+    public Set<User> getUsers() {
+        return users;
+    }
+
+    public void setUsers(Set<User> users) {
+        this.users = users;
+    }
+
     public LocalDateTime getCreatedDate() {
         return createdDate;
     }
-
-    // No need for a setter for createdDate since it's managed by the database
 }

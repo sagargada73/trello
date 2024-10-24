@@ -1,5 +1,9 @@
 package com.Webapp.model;
 
+import java.util.List;
+
+// import org.hibernate.mapping.List;
+
 import jakarta.persistence.*;
 
 @Entity
@@ -13,6 +17,9 @@ public class User {
     private String name;
 
     private String email;  // Add email field
+
+    @ManyToMany(mappedBy = "users")
+    private List<Project> projects;
 
     // Default constructor
     public User() {}
