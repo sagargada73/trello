@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -26,6 +27,16 @@ public class ProjectController {
     @GetMapping
     public List<Project> getAllProjects() {
         return projectRepository.findAll();
+    }
+    @GetMapping("/{projectId}/users")
+    public ResponseEntity<List<User>> getUsersByProject(@PathVariable Long projectId) {
+        Optional<Project> projectOptional = projectRepository.findById(projectId);
+        if (projectOptional.isPresent()) {
+            List<User> users = new ArrayList<>(projectOptional.get().getUsers()); // Convert Set<User> to List<User>
+            return ResponseEntity.ok(users);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @PostMapping
@@ -90,3 +101,6 @@ public class ProjectController {
         }
     }
 }
+
+
+

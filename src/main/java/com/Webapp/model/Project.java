@@ -26,6 +26,9 @@ public class Project {
 
     @Column(name = "created_date", updatable = false, insertable = false)
     private LocalDateTime createdDate;
+    
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Task> tasks = new HashSet<>();
 
     public Project() {}
 
