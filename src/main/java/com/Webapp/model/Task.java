@@ -2,7 +2,10 @@ package com.Webapp.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Set;
+import java.util.List;
 
 @Entity
 @Table(name = "tasks")
@@ -43,9 +46,23 @@ public class Task {
         this.state = state;
     }
 
-    public Long getId() {
-        return id;
-    }
+    @ManyToMany
+    @JoinTable(
+        name = "task_labels",
+        joinColumns = @JoinColumn(name = "task_id"),
+        inverseJoinColumns = @JoinColumn(name = "label_id")
+    )
+    private Set<Label> labels = new HashSet<>();
+
+    @Column(name = "due_date")
+    private LocalDateTime dueDate;
+
+    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ChecklistItem> checklistItems = new ArrayList<>();
+
+        public Long getId() {
+            return id;
+        }
 
     public void setId(Long id) {
         this.id = id;
@@ -93,5 +110,26 @@ public class Task {
 
     public void setAssignedUsers(Set<User> assignedUsers) {
         this.assignedUsers = assignedUsers;
+    }
+    public void setChecklistItems(List<ChecklistItem> checklistItems) {
+        this.checklistItems = checklistItems;
+    }
+    public void setDueDate(LocalDateTime dueDate) {
+        this.dueDate = dueDate;
+    }
+    public void setLabels(Set<Label> labels) {
+        this.labels = labels;
+    }
+    public void setCreatedDate(LocalDateTime createdDate) {
+        this.createdDate = createdDate;
+    }
+    public List<ChecklistItem> getChecklistItems() {
+        return checklistItems;
+    }
+    public LocalDateTime getDueDate() {
+        return dueDate;
+    }
+    public Set<Label> getLabels() {
+        return labels;
     }
 }
