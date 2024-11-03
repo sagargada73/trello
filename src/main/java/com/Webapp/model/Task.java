@@ -1,15 +1,13 @@
 package com.Webapp.model;
 
+import java.util.concurrent.Flow;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.List;
+import java.util.*;
 
 @Entity
 @Table(name = "tasks")
-public class Task {
+public class Task implements Flow.Publisher<Task>{ // Implementing Flow.Publisher
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,6 +34,18 @@ public class Task {
         inverseJoinColumns = @JoinColumn(name = "user_id")
     )
     private Set<User> assignedUsers;
+
+    // Connection to watcher table
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "task_watchers",
+        joinColumns = @JoinColumn(name = "task_id"),
+        inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    private Set<User> watchers = new HashSet<>();
+
+    @Transient
+    private final List<Flow.Subscriber<? super Task>> subscribers = new ArrayList<>();
 
     // Constructors, Getters, and Setters
     public Task() {}
@@ -131,5 +141,58 @@ public class Task {
     }
     public Set<Label> getLabels() {
         return labels;
+    }
+
+    // Watcher Code
+    public Set<User> getWatchers() {
+        return watchers;
+    }
+
+    public void addWatcher(User user) {
+        watchers.add(user);
+    }
+
+    public void removeWatcher(User user) {
+        watchers.remove(user);
+    }
+
+    @Override
+    public void subscribe(Flow.Subscriber<? super Task> subscriber) {
+        subscribers.add(subscriber);
+        subscriber.onSubscribe(new TaskSubscription(subscriber, this));
+    }
+
+    private void notifyObservers() {
+        for (Flow.Subscriber<? super Task> subscriber : subscribers) {
+            subscriber.onNext(this);
+        }
+    }
+
+    public void updateTask(String newTitle, String newDescription) {
+        this.title = newTitle;
+        this.description = newDescription;
+        notifyObservers();
+    }
+
+
+    // Subscription inner class to handle flow control
+    private static class TaskSubscription implements Flow.Subscription {
+        private final Flow.Subscriber<? super Task> subscriber;
+        private final Task task;
+
+        public TaskSubscription(Flow.Subscriber<? super Task> subscriber, Task task) {
+            this.subscriber = subscriber;
+            this.task = task;
+        }
+
+        @Override
+        public void request(long n) {
+            subscriber.onNext(task);
+        }
+
+        @Override
+        public void cancel() {
+            // Handle cancellation logic if needed
+        }
     }
 }
