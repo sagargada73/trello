@@ -2,6 +2,7 @@ package com.Webapp.controller;
 
 import com.Webapp.model.*;
 import com.Webapp.repository.*;
+import com.Webapp.service.NotificationService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -34,6 +35,9 @@ public class TaskController {
     @Autowired
     private ProjectRepository projectRepository;
 
+    @Autowired
+    private NotificationService notificationService;
+
     @PostMapping
     public ResponseEntity<Task> createTask(@RequestBody Task task) {
         return ResponseEntity.ok(taskRepository.save(task));
@@ -46,7 +50,14 @@ public class TaskController {
         if (taskOptional.isPresent()) {
             Task task = taskOptional.get();
             task.setState(state);
-            return ResponseEntity.ok(taskRepository.save(task));
+            // Save the updated task to the database
+            Task updatedTask = taskRepository.save(task);
+
+            // Notify all watchers of the task about the state update
+            notificationService.notifyWatchers(updatedTask,
+                    "Task " + updatedTask.getTitle() + " has changed to state: " + state);
+
+            return ResponseEntity.ok(updatedTask);
         }
         return ResponseEntity.notFound().build();
     }
@@ -152,33 +163,33 @@ public class TaskController {
     @GetMapping("/projects/{projectId}/task-watchers")
     public ResponseEntity<Map<String, List<String>>> getTaskWatchersByProject(@PathVariable Long projectId) {
         Optional<Project> optionalProject = projectRepository.findById(projectId);
-    
+
         if (optionalProject.isPresent()) {
             Project project = optionalProject.get();
             Map<String, List<String>> taskWatchersMap = new HashMap<>();
-    
+
             // Retrieve all tasks for the project
             List<Task> tasks = taskRepository.findByProject(project);
-    
+
             // For each task, find watchers and map them
             for (Task task : tasks) {
                 List<Watcher> taskWatchers = watcherRepository.findByTask(task);
                 List<String> watcherNames = new ArrayList<>();
-                
+
                 for (Watcher watcher : taskWatchers) {
                     watcherNames.add(watcher.getUser().getName()); // Collect watcher names
                 }
-    
+
                 // Add task and its watchers to the map
                 taskWatchersMap.put(task.getTitle(), watcherNames);
             }
-    
+
             return ResponseEntity.ok(taskWatchersMap);
         } else {
             return ResponseEntity.notFound().build();
         }
     }
-    
+
     @GetMapping("/{taskId}/watchers")
     public Set<User> getWatchers(@PathVariable Long taskId) {
         Task task = taskRepository.findById(taskId).orElseThrow(() -> new RuntimeException("Task not found"));

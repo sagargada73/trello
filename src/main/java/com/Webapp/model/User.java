@@ -75,4 +75,9 @@ public class User implements Flow.Subscriber<Task> {
     public void onComplete() {
         System.out.println("Task updates complete for user " + name);
     }
+
+    public void receiveNotification(String message) {
+        // Logic for handling notifications (e.g., storing in a list, logging, etc.)
+        System.out.println("Notification for " + this.name + ": " + message);
+    }
 }
