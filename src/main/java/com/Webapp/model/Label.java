@@ -7,7 +7,16 @@ public class Label {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(unique = true)
     private String name;
+
+    // No-args constructor
+    public Label() {}
+
+    public Label(String name) {
+        this.name = name;
+    }
 
     // Getters and Setters
     public Long getId() {

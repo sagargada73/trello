@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/tasks")
@@ -36,6 +37,9 @@ public class TaskController {
     private ProjectRepository projectRepository;
 
     @Autowired
+    private NotificationRepository notificationRepository;
+
+    @Autowired
     private NotificationService notificationService;
 
     @PostMapping
@@ -43,52 +47,85 @@ public class TaskController {
         return ResponseEntity.ok(taskRepository.save(task));
     }
 
-    @PutMapping("/{taskId}/title")
-    public Task updateTaskTitle(@PathVariable Long taskId, @RequestParam String title) {
-        Optional<Task> taskOptional = taskRepository.findById(taskId);
-
-        if (taskOptional.isPresent()) {
-            Task task = taskOptional.get();
-            task.setTitle(title);
-            return taskRepository.save(task);
-        } else {
-            throw new RuntimeException("Task not found");
-        }
-    }
-
-    @PutMapping("/{taskId}/description")
-    public Task updateTaskDescription(@PathVariable Long taskId, @RequestParam String description) {
-        Optional<Task> taskOptional = taskRepository.findById(taskId);
-
-        if (taskOptional.isPresent()) {
-            Task task = taskOptional.get();
-            task.setDescription(description);
-            return taskRepository.save(task);
-        } else {
-            throw new RuntimeException("Task not found");
-        }
-    }
-
+    @PutMapping("/{taskId}")
     @Transactional
-    @PutMapping("/{id}/state")
-    public ResponseEntity<Task> updateTaskState(@PathVariable Long id, @RequestParam TaskState state) {
-        Optional<Task> taskOptional = taskRepository.findById(id);
-        if (taskOptional.isPresent()) {
-            Task task = taskOptional.get();
-            task.setState(state);
-
-            // Notify all watchers of the task about the state update
-            List<Watcher> watchers = watcherRepository.findByTask(task);
-            String message = "Task '" + task.getTitle() + "' has been moved to " + state;
-
-            for (Watcher watcher : watchers) {
-                User user = watcher.getUser();
-                notificationService.createNotification(task, user, message);
-            }
-
-            return ResponseEntity.ok(taskRepository.save(task));
+    public ResponseEntity<?> updateTask(@PathVariable Long taskId, @RequestBody TaskUpdateDTO taskUpdateDTO) {
+        Task existingTask = taskRepository.findById(taskId)
+                .orElseThrow(() -> new RuntimeException("Task not found with id: " + taskId));
+    
+        List<String> changes = new ArrayList<>();
+    
+        // Update title
+        if (!Objects.equals(existingTask.getTitle(), taskUpdateDTO.getTitle())) {
+            changes.add("Title updated from '" + existingTask.getTitle() + "' to '" + taskUpdateDTO.getTitle() + "'");
+            existingTask.setTitle(taskUpdateDTO.getTitle());
         }
-        return ResponseEntity.notFound().build();
+    
+        // Update description
+        if (!Objects.equals(existingTask.getDescription(), taskUpdateDTO.getDescription())) {
+            changes.add("Description updated");
+            existingTask.setDescription(taskUpdateDTO.getDescription());
+        }
+    
+        // Update due date
+        if (!Objects.equals(existingTask.getDueDate(), taskUpdateDTO.getDueDate())) {
+            changes.add("Due date updated from " + existingTask.getDueDate() + " to " + taskUpdateDTO.getDueDate());
+            existingTask.setDueDate(taskUpdateDTO.getDueDate());
+        }
+    
+        // Update state
+        if (existingTask.getState() != taskUpdateDTO.getState()) {
+            changes.add("State updated from " + existingTask.getState() + " to " + taskUpdateDTO.getState());
+            existingTask.setState(taskUpdateDTO.getState());
+        }
+    
+        // Update labels
+        Set<String> oldLabels = existingTask.getLabels().stream().map(Label::getName).collect(Collectors.toSet());
+        Set<String> newLabels = taskUpdateDTO.getLabels().stream().map(Label::getName).collect(Collectors.toSet());
+        if (!oldLabels.equals(newLabels)) {
+            changes.add("Labels updated from " + oldLabels + " to " + newLabels);
+            existingTask.getLabels().clear();
+            for (Label label : taskUpdateDTO.getLabels()) {
+                Label existingLabel = labelRepository.findByName(label.getName())
+                        .orElseGet(() -> labelRepository.save(label));
+                existingTask.getLabels().add(existingLabel);
+            }
+        }
+    
+        // Update checklist items
+        List<String> oldItems = existingTask.getChecklistItems().stream().map(ChecklistItem::getDescription).collect(Collectors.toList());
+        List<String> newItems = taskUpdateDTO.getChecklistItems().stream().map(ChecklistItem::getDescription).collect(Collectors.toList());
+        if (!oldItems.equals(newItems)) {
+            changes.add("Checklist items updated from " + oldItems + " to " + newItems);
+            existingTask.getChecklistItems().clear();
+            for (ChecklistItem item : taskUpdateDTO.getChecklistItems()) {
+                item.setTask(existingTask);
+                existingTask.getChecklistItems().add(checklistItemRepository.save(item));
+            }
+        }
+    
+        // Save the updated task
+        Task updatedTask = taskRepository.save(existingTask);
+    
+        // Create notifications for watchers
+        List<Watcher> watchers = watcherRepository.findByTask(updatedTask);
+        for (Watcher watcher : watchers) {
+            User user = watcher.getUser();
+            Notification notification = new Notification();
+            notification.setMessage("Task '" + updatedTask.getTitle() + "' has been updated. Changes: " + String.join(", ", changes));
+            notification.setTimestamp(LocalDateTime.now());
+            notification.setTask(updatedTask);
+            notification.setUser(user);
+            notificationRepository.save(notification);
+        }
+    
+        // Log changes to console
+        System.out.println("Task updated: " + updatedTask.getTitle());
+        for (String change : changes) {
+            System.out.println("- " + change);
+        }
+    
+        return ResponseEntity.ok(updatedTask);
     }
 
     @GetMapping("/users/{userId}/notifications")

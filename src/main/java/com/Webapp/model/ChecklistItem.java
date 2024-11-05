@@ -25,6 +25,12 @@ public class ChecklistItem {
         this.description = description;
         this.isCompleted = isCompleted;
     }
+    // Constructor with fields
+    public ChecklistItem(Task task, String description, Boolean isCompleted) {
+        this.task = task;
+        this.description = description;
+        this.isCompleted = isCompleted;
+    }
 
     // Getters and Setters
     public String getDescription() {

@@ -67,7 +67,7 @@ public class Task implements Flow.Publisher<Task>{ // Implementing Flow.Publishe
     @Column(name = "due_date")
     private LocalDateTime dueDate;
 
-    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChecklistItem> checklistItems = new ArrayList<>();
 
     public Long getId() {

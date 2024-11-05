@@ -37,12 +37,20 @@ public class Notification {
     }
     public User getUser() {
         return user;
+        
+    }
+    public boolean isRead() {
+        return isRead;
     }
     public void setId(Long id) {
         this.id = id;
     }
     public void setMessage(String message) {
-        this.message = message;
+        if (message.length() > 1000) {
+            this.message = message.substring(0, 997) + "...";
+        } else {
+            this.message = message;
+        }
     }
     public void setRead(boolean isRead) {
         this.isRead = isRead;

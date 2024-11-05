@@ -33,7 +33,7 @@ public class TaskUpdateDTO {
     public String getTitle() {
         return title;
     }
-    public List<Long> getUserIds() {  // Getter for user IDs
+    public List<Long> getUserIds() {
         return userIds;
     }
     public void setChecklistItems(List<ChecklistItem> checklistItems) {
@@ -55,7 +55,7 @@ public class TaskUpdateDTO {
         this.title = title;
     }
 
-    public void setUserIds(List<Long> userIds) {  // Setter for user IDs
+    public void setUserIds(List<Long> userIds) {
         this.userIds = userIds;
     }
     
