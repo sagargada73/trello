@@ -43,6 +43,32 @@ public class TaskController {
         return ResponseEntity.ok(taskRepository.save(task));
     }
 
+    @PutMapping("/{taskId}/title")
+    public Task updateTaskTitle(@PathVariable Long taskId, @RequestParam String title) {
+        Optional<Task> taskOptional = taskRepository.findById(taskId);
+
+        if (taskOptional.isPresent()) {
+            Task task = taskOptional.get();
+            task.setTitle(title);
+            return taskRepository.save(task);
+        } else {
+            throw new RuntimeException("Task not found");
+        }
+    }
+
+    @PutMapping("/{taskId}/description")
+    public Task updateTaskDescription(@PathVariable Long taskId, @RequestParam String description) {
+        Optional<Task> taskOptional = taskRepository.findById(taskId);
+
+        if (taskOptional.isPresent()) {
+            Task task = taskOptional.get();
+            task.setDescription(description);
+            return taskRepository.save(task);
+        } else {
+            throw new RuntimeException("Task not found");
+        }
+    }
+
     @Transactional
     @PutMapping("/{id}/state")
     public ResponseEntity<Task> updateTaskState(@PathVariable Long id, @RequestParam TaskState state) {
@@ -50,14 +76,28 @@ public class TaskController {
         if (taskOptional.isPresent()) {
             Task task = taskOptional.get();
             task.setState(state);
-            // Save the updated task to the database
-            Task updatedTask = taskRepository.save(task);
 
             // Notify all watchers of the task about the state update
-            notificationService.notifyWatchers(updatedTask,
-                    "Task " + updatedTask.getTitle() + " has changed to state: " + state);
+            List<Watcher> watchers = watcherRepository.findByTask(task);
+            String message = "Task '" + task.getTitle() + "' has been moved to " + state;
 
-            return ResponseEntity.ok(updatedTask);
+            for (Watcher watcher : watchers) {
+                User user = watcher.getUser();
+                notificationService.createNotification(task, user, message);
+            }
+
+            return ResponseEntity.ok(taskRepository.save(task));
+        }
+        return ResponseEntity.notFound().build();
+    }
+
+    @GetMapping("/users/{userId}/notifications")
+    public ResponseEntity<List<Notification>> getUnreadNotifications(@PathVariable Long userId) {
+        Optional<User> userOptional = userRepository.findById(userId);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            List<Notification> notifications = notificationService.getUnreadNotifications(user);
+            return ResponseEntity.ok(notifications);
         }
         return ResponseEntity.notFound().build();
     }
