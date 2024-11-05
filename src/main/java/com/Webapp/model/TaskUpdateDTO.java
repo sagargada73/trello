@@ -4,6 +4,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Data Transfer Object for updating task details.
+ */
 public class TaskUpdateDTO {
     private String title;
     private String description;
@@ -14,7 +17,6 @@ public class TaskUpdateDTO {
     private List<Long> userIds;
 
     // Getters and Setters
-    // ...
     public List<ChecklistItem> getChecklistItems() {
         return checklistItems;
     }

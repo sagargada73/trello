@@ -5,12 +5,18 @@ import java.util.Objects;
 
 import jakarta.persistence.Embeddable;
 
+/**
+ * Embeddable class representing a composite key for the Watcher entity.
+ * This class combines taskId and userId to form a unique identifier for a watcher.
+ */
 @Embeddable
 public class WatcherId implements Serializable {
-    private Long taskId;
-    private Long userId;
+    private Long taskId;  // ID of the task being watched
+    private Long userId;  // ID of the user watching the task
 
-    // Default constructor
+    /**
+     * Default constructor required by JPA.
+     */
     public WatcherId() {}
 
     public WatcherId(Long taskId, Long userId) {
@@ -35,6 +41,12 @@ public class WatcherId implements Serializable {
         this.userId = userId;
     }
 
+    /**
+     * Compares this WatcherId with another object for equality.
+     *
+     * @param o The object to compare with
+     * @return true if the objects are equal, false otherwise
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -44,6 +56,11 @@ public class WatcherId implements Serializable {
                Objects.equals(userId, watcherId.userId);
     }
 
+    /**
+     * Generates a hash code for this WatcherId.
+     *
+     * @return The hash code
+     */
     @Override
     public int hashCode() {
         return Objects.hash(taskId, userId);
