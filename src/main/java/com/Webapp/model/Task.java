@@ -33,7 +33,7 @@ public class Task implements Flow.Publisher<Task> { // Implementing Flow.Publish
 
     @ManyToMany
     @JoinTable(name = "task_users", joinColumns = @JoinColumn(name = "task_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
-    private Set<User> assignedUsers; // Users assigned to this task
+    private Set<User> assignedUsers; // Users assigned to this task - in
 
     // Connection to watcher table
     @ManyToMany(fetch = FetchType.EAGER)

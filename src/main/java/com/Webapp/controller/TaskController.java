@@ -1,5 +1,8 @@
 package com.Webapp.controller;
 
+import com.Webapp.command.CommandInvoker;
+import com.Webapp.command.CreateTaskCommand;
+import com.Webapp.command.UpdateTaskCommand;
 import com.Webapp.model.*;
 import com.Webapp.repository.*;
 import com.Webapp.service.NotificationService;
@@ -45,6 +48,9 @@ public class TaskController {
     @Autowired
     private NotificationService notificationService;
 
+    @Autowired
+    private CommandInvoker commandInvoker;
+
     /**
      * Create a new task.
      *
@@ -53,7 +59,9 @@ public class TaskController {
      */
     @PostMapping
     public ResponseEntity<Task> createTask(@RequestBody Task task) {
-        return ResponseEntity.ok(taskRepository.save(task));
+        CreateTaskCommand command = new CreateTaskCommand(taskRepository, task);
+        commandInvoker.executeCommand(command);
+        return ResponseEntity.ok(task);
     }
 
     /**
@@ -144,7 +152,8 @@ public class TaskController {
         for (String change : changes) {
             System.out.println("- " + change);
         }
-
+        UpdateTaskCommand command = new UpdateTaskCommand(taskRepository, taskId, existingTask);
+        commandInvoker.executeCommand(command);
         return ResponseEntity.ok(updatedTask);
     }
 
@@ -166,6 +175,12 @@ public class TaskController {
             return ResponseEntity.ok(notifications);// Return list of notifications as response entity.
         }
         return ResponseEntity.notFound().build();// Return not found status if User doesn't exist.
+    }
+
+    @PostMapping("/undo")
+    public ResponseEntity<?> undoLastOperation() {
+        commandInvoker.undoLastCommand();
+        return ResponseEntity.ok("Last operation undone");
     }
 
     /**
